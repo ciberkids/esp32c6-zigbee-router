@@ -7,8 +7,8 @@ substitutions:
   device_name: esp32-c6-zigbee-router
   friendly_name: ESP32-C6 Zigbee Router
   # Seeed XIAO ESP32C6 antenna selection:
-  # ALWAYS_OFF = built-in ceramic antenna, ALWAYS_ON = external U.FL/SMA antenna
-  antenna_mode: ALWAYS_OFF
+  # ALWAYS_ON = external U.FL/SMA antenna, ALWAYS_OFF = built-in ceramic antenna
+  antenna_mode: ALWAYS_ON
 
 esphome:
   name: ${device_name}

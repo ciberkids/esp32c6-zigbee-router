@@ -66,13 +66,15 @@ substitutions:
 
 The XIAO ESP32C6 has a built-in ceramic antenna and a U.FL connector for an external antenna (e.g. the SMA antenna of the recommended case). The antenna is selected by an RF switch (GPIO3 = switch power, GPIO14 = antenna select).
 
-If you use an **external antenna**, change this substitution before flashing:
+The config uses the **external antenna** by default (`ALWAYS_ON`), matching the SMA antenna of the recommended case. If you use the **built-in antenna**, change this substitution before flashing:
 ```yaml
 substitutions:
-  antenna_mode: ALWAYS_ON   # external antenna
+  antenna_mode: ALWAYS_OFF   # built-in ceramic antenna
 ```
 
-> ⚠️ Without an external antenna connected, keep the built-in antenna (`ALWAYS_OFF`). Otherwise the range will be very poor.
+> ⚠️ Without an external antenna connected, `ALWAYS_ON` gives very poor range. Switch to `ALWAYS_OFF` in that case.
+
+You can also set it on the command line without editing the file: `esphome -s antenna_mode ALWAYS_OFF run esp32-c6-zigbee-router.yaml`
 
 ### ⚡ Step 3: Compile and Flash Firmware
 
@@ -127,6 +129,16 @@ docker compose restart
 
 > ⚠️ **Note:** You need to run `sudo chmod 666` each time you reconnect the USB device.
 
+**Inside a Distrobox/Toolbox container:** the device shows up as `nobody:nogroup` and `sudo` inside the box can't change it. Run the `chmod` on the host, e.g. `distrobox-host-exec sudo chmod 666 /dev/ttyACM0`.
+
+**SELinux (Fedora) with rootless Podman:** even with `chmod 666`, the container may get `Permission denied` on the serial port. Disable SELinux labeling for the container (`security_opt: label=disable`, already set in `docker-compose.yml`), or with `podman run`:
+
+```bash
+podman run --rm --security-opt label=disable -v "$PWD":/config \
+  --device /dev/ttyACM0 ghcr.io/esphome/esphome:stable \
+  run esp32-c6-zigbee-router.yaml --device /dev/ttyACM0
+```
+
 </details>
 
 ---
@@ -174,7 +186,7 @@ Then open **http://localhost:6052** in your browser and use the web interface.
 web.esphome.io can only **flash** a finished firmware file. It cannot compile your YAML, so build it first:
 
 1. Compile locally: `esphome compile esp32-c6-zigbee-router.yaml`
-2. The firmware is written to `.esphome/build/esp32-c6-zigbee-router/.pioenvs/esp32-c6-zigbee-router/firmware.factory.bin`
+2. The firmware is written to `.esphome/build/esp32-c6-zigbee-router/build/firmware.factory.bin`
 3. Open **https://web.esphome.io/** in Chrome or Edge, click "Connect", choose your ESP32-C6 and select "Install"
 4. Upload the `firmware.factory.bin` file
 
@@ -198,6 +210,10 @@ After flashing is complete, enable pairing mode on your Zigbee Coordinator:
 3. The ESP32-C6 will be discovered and added
 
 > **⏱️ Note:** The device will search for and join the network automatically within 30-60 seconds after boot. Keep pairing mode active until the device appears!
+
+> **💡 Note:** If the logs repeat `Failed to join network with status(0x03)` every few seconds, the router doesn't find a network that accepts new devices. Enable pairing mode on the coordinator. The router keeps retrying and joins within seconds.
+
+> **❓ Why don't I see it in ESPHome?** The router has no WiFi, so it never shows up in the ESPHome dashboard (only as offline) or in the ESPHome integration of Home Assistant. You find it in Zigbee2MQTT or ZHA.
 
 ---
 
@@ -227,8 +243,11 @@ esphome logs esp32-c6-zigbee-router.yaml --device=/dev/ttyACM0
 
 You should see:
 - No continuous error messages
-- `Joined network successfully: PAN ID(...), Channel(...), Short Address(...)`
-- In the config dump: `Router: YES` and `Device is joined to the network: YES`
+- First pairing: `Joined network successfully: PAN ID(...), Channel(...), Short Address(...)`
+- After a reboot: `Device rebooted` and `Rejoined Zigbee network`
+- In the config dump: `Router: YES`
+
+> **💡 Note:** The config dump is printed right after boot, before the router has rejoined. It can show `Device is joined to the network: NO` even when everything works. The join messages above are what counts.
 
 ---
 
@@ -283,7 +302,7 @@ To flash multiple ESP32-C6 devices and use them as separate routers in the same 
 substitutions:
   device_name: esp32-c6-zigbee-router-2    # Must be unique!
   friendly_name: ESP32-C6 Zigbee Router 2
-  # antenna_mode: ALWAYS_ON                # Optional: external antenna
+  # antenna_mode: ALWAYS_OFF               # Optional: built-in antenna
 
 packages:
   base: !include esp32-c6-zigbee-router.yaml
@@ -307,6 +326,7 @@ Each device joins the same Zigbee network and acts as an independent router, ext
 ├── .github/workflows/build.yml     # CI: validates and compiles the config
 ├── .gitignore                      # Excludes secrets and build artifacts
 ├── docker-compose.yml              # Docker/Podman setup for ESPHome
+├── LICENSE                         # MIT license
 └── README.md                       # This file
 ```
 
