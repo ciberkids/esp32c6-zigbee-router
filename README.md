@@ -4,7 +4,7 @@
 
 **Extend Your Zigbee Network Coverage with an Affordable ESP32-C6!**
 
-<img src="./zigbee-router-image.jpg" alt="ESP32-C6 Zigbee Router" width="600">
+<img src="./zigbee-router-image.jpg" alt="Seeed XIAO ESP32C6 as a Zigbee router in a 3D-printed case with an external SMA antenna" width="600">
 
 [![ESPHome](https://img.shields.io/badge/ESPHome-2026.5%2B-blue?logo=esphome)](https://esphome.io/components/zigbee/)
 [![Zigbee](https://img.shields.io/badge/Zigbee-3.0-green)](https://csa-iot.org/all-solutions/zigbee/)
@@ -12,7 +12,7 @@
 [![Build](https://github.com/firsttris/esp32c6-zigbee-router/actions/workflows/build.yml/badge.svg)](https://github.com/firsttris/esp32c6-zigbee-router/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-This ESPHome configuration turns an ESP32-C6 board into a Zigbee router that seamlessly integrates with your Zigbee network to expand coverage and improve connectivity for your Zigbee devices.
+This ESPHome configuration turns a ~5 € ESP32-C6 board into a **Zigbee 3.0 router** (repeater / range extender) for **Zigbee2MQTT** and **ZHA**. No WiFi, no secrets: flash it, pair it, and your battery-powered Zigbee devices get a closer hop to the coordinator.
 
 ---
 
@@ -315,6 +315,30 @@ If you want OTA updates via WiFi anyway, uncomment the `wifi:` and `ota:` blocks
 
 ---
 
+## ❓ FAQ
+
+### Can the ESP32-C6 be a Zigbee coordinator?
+
+No. It joins an existing Zigbee network as a router, so you still need a coordinator (a Zigbee USB or network adapter with Zigbee2MQTT or ZHA).
+
+### Zigbee repeater, router or range extender: what's the difference?
+
+None here. A Zigbee *repeater* or *range extender* is a router without a function of its own. This one joins as a Zigbee **Range Extender** and relays traffic for all other devices.
+
+### Why doesn't the router show up in ESPHome?
+
+It has no WiFi, so the ESPHome dashboard only lists it as offline and the ESPHome integration of Home Assistant never sees it. You find it in Zigbee2MQTT or ZHA, see [Step 4](#-step-4-connect-router-to-coordinator).
+
+### ESP32-C6 or ESP32-H2?
+
+Both work with ESPHome's Zigbee component, and so does the ESP32-C5. According to the [ESPHome docs](https://esphome.io/components/zigbee/) the ESP32-H2 works more reliably than the ESP32-C6. This config is only tested on the ESP32-C6, see [Other boards](#-prerequisites).
+
+### Can the same board run Zigbee and Thread (Matter) at the same time?
+
+No. The ESP32-C6 has one 802.15.4 radio, and a firmware uses it for either Zigbee or Thread. For Thread, flash the [ESP32-C6 Thread Router](https://github.com/firsttris/esp32c6-thread-router) instead.
+
+---
+
 ## 🔄 Multiple Zigbee Routers
 
 To flash multiple ESP32-C6 devices and use them as separate routers in the same Zigbee network, create a small file per additional device (e.g. `esp32-c6-zigbee-router-2.yaml`) that reuses the main config:
@@ -343,11 +367,12 @@ Each device joins the same Zigbee network and acts as an independent router, ext
 ```
 .
 ├── esp32-c6-zigbee-router.yaml     # Main ESPHome configuration
-├── esp32-c6-zigbee-router-2.yaml   # Optional: Second router
+├── esp32-c6-zigbee-router-2.yaml   # Optional: second router you create (not in git)
 ├── .github/workflows/build.yml     # CI: validates and compiles the config
 ├── .gitignore                      # Excludes secrets and build artifacts
 ├── docker-compose.yml              # Docker/Podman setup for ESPHome
 ├── LICENSE                         # MIT license
+├── zigbee-router-image.jpg         # Image used in this README
 └── README.md                       # This file
 ```
 
